@@ -17,7 +17,7 @@ if (flight_parameters.AV.length == 0) {
     let delta = 0.1
     flight_parameters.AV = []
     for (let i = 0.0; i < 180; i += delta) {
-        flight_parameters.AV.push(i)
+        flight_parameters.AV.push(i.toFixed(2))
     }
 }
 
@@ -33,13 +33,14 @@ const prepareADXResult = function (adxTab, adxPrms, MV, AV, vehicle_name, area, 
         const alpha = rad ? AV[j] : (AV[j] * Math.PI / 180)
         const CTA = Math.cos(alpha)
         const STA = Math.sin(alpha)
-        const { Cx, Cy, CxF } = adxTab[0][j]
-        const Cxa = -Cx * CTA + Cy * STA + CxF
-        const Cya = Cx * STA + Cy * CTA
+        let {Cx, Cy, Cz, CxF } = adxTab[0][j]
+        Cx = -Cx;
+        const Cxa = Cx * CTA + Cy * STA + CxF
+        const Cya = Cy * CTA - Cx * STA
 
         let alpha_deg = rad ? (AV[j] * 180 / Math.PI) : AV[j]
 
-        let Cx_str = `${alpha_deg} -> ${-Cx}\n`
+        let Cx_str = `${alpha_deg} -> ${Cx}\n`
         let Cxa_str = `${alpha_deg} -> ${Cxa}\n`
         let Cy_str = `${alpha_deg} -> ${Cy}\n`
         let Cya_str = `${alpha_deg} -> ${Cya}\n`
@@ -86,6 +87,7 @@ const processADX = function (geometry) {
         0,
         test_flow
     )
+    console.log(rad ? AV : AV.map(alpha => alpha * Math.PI / 180))
 
     console.log('aerodinamic data ready to output;\n')
 
