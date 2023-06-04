@@ -1,0 +1,4 @@
+[submodule "flyplot"]
+	path = flyplot
+	url = git@github.com:moprules/flyplot.git
+	branch = dev
