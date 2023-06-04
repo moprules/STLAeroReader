@@ -1,0 +1,6 @@
+name: Cxa
+type: 2D
+x: фдзрф | deg
+y: Cxa  |
+
+coords:

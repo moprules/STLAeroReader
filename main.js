@@ -1,6 +1,7 @@
 'use strict'
 
 const fs = require('fs')
+const { prepareRes } = require('./modules/dataFile.js')
 
 const { readSTL } = require('./modules/stlReader.js')
 
@@ -24,69 +25,42 @@ const activeAtmo = new AtmoModel()
 activeAtmo.initAtmo(atmosphereData)
 
 const prepareADXResult = function (adxTab, adxPrms, MV, AV, vehicle_name, area, rad) {
-    let Cxa_str = ''
-    let Cya_str = ''
-    let Cx_str = ''
-    let Cy_str = ''
+    let res = prepareRes(vehicle_name)
 
-    const nM = MV.length
     const nA = AV.length
 
-    for (let i = 0; i < nM; i++) {
-        for (let j = 0; j < nA; j++) {
-            const alpha = rad ? AV[j] : (AV[j] / 57.3)
-            const CTA = Math.cos(alpha)
-            const STA = Math.sin(alpha)
-            const { Cx, Cy, CxF } = adxTab[i][j]
-            const Cxa = -Cx * CTA + Cy * STA + CxF
-            const Cya = Cx * STA + Cy * CTA
+    for (let j = 0; j < nA; j++) {
+        const alpha = rad ? AV[j] : (AV[j] * Math.PI / 180)
+        const CTA = Math.cos(alpha)
+        const STA = Math.sin(alpha)
+        const { Cx, Cy, CxF } = adxTab[0][j]
+        const Cxa = -Cx * CTA + Cy * STA + CxF
+        const Cya = Cx * STA + Cy * CTA
 
-            Cxa_str += `${Cxa.toFixed(4)}\t`
-            Cya_str += `${Cya.toFixed(4)}\t`
-            Cx_str += `${(-Cx).toFixed(4)}\t`
-            Cy_str += `${Cy.toFixed(4)}\t`
-        }
-        Cxa_str += '\n'
-        Cya_str += '\n'
-        Cx_str += '\n'
-        Cy_str += '\n'
+        let alpha_deg = rad ? (AV[j] * 180 / Math.PI) : AV[j]
+
+        let Cx_str = `${alpha_deg} -> ${-Cx}\n`
+        let Cxa_str = `${alpha_deg} -> ${Cxa}\n`
+        let Cy_str = `${alpha_deg} -> ${Cy}\n`
+        let Cya_str = `${alpha_deg} -> ${Cya}\n`
+
+        fs.writeFileSync(res["Cx"], Cx_str, { flag: 'a' })
+        fs.writeFileSync(res["Cxa"], Cxa_str, { flag: 'a' })
+        fs.writeFileSync(res["Cy"], Cy_str, { flag: 'a' })
+        fs.writeFileSync(res["Cya"], Cya_str, { flag: 'a' })
+
     }
 
-    const resultHeader = `Aerodynamic characteristics for ${vehicle_name}\n Calculated for specific area: ${area} m2\n\n\n\n`
 
-    const machPoints = `Mach points\n ${MV.map(Mach => Mach.toFixed(2)).join('\t')}\n\n`
+    const resultHeader = `Aerodynamic characteristics for ${vehicle_name}\nCalculated for specific area: ${area} m2\n\n\n\n`
 
-    const adxPrmPoints = `${adxPrms.map(({ reynolds, knudsen }) => 'Re: ' + reynolds.toFixed(0) + '; Kn: ' + knudsen).join('\t')}\n\n`
 
-    const alphaPoints = `AoA points\n ${AV.map(alpha => (rad ? alpha * 57.3 : alpha).toFixed(2)).join('\t')}\n\n\n\n`
+    const machPoints = `Mach = \n ${MV.map(Mach => Mach.toFixed(2)).join('\t')}\n\n`
 
-    const adxTabs = [
-        'Cx\n',
-        Cx_str,
-        '\n\n',
-        'Cy\n',
-        Cy_str,
-        '\n\n\n\n',
-        'Cxa\n',
-        Cxa_str,
-        '\n\n',
-        'Cya\n',
-        Cya_str
-    ].join('')
+    const adxPrmPoints = `${adxPrms.map(({ reynolds, knudsen }) => 'Re: ' + reynolds + '; Kn: ' + knudsen).join('\t')}\n\n`
 
-    fs.writeFile(
-        `${vehicle_name}.txt`,
-        (resultHeader + machPoints + adxPrmPoints + alphaPoints + adxTabs),
-        'ascii',
-        function (err) {
-            if (err) {
-                console.log('failed to save result');
-                console.log(err)
-            } else {
-                console.log(`aerodynamic data saved to ${vehicle_name}.txt;\n`)
-            }
-        }
-    )
+    console.log(resultHeader + machPoints + adxPrmPoints)
+
 }
 
 const processADX = function (geometry) {
@@ -108,7 +82,7 @@ const processADX = function (geometry) {
 
     const { adxTable, adxParameters } = model.calcTable(
         MV,
-        rad ? AV : AV.map(alpha => alpha / 57.3),
+        rad ? AV : AV.map(alpha => alpha * Math.PI / 180),
         0,
         test_flow
     )

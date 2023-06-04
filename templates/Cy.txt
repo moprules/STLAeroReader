@@ -1,0 +1,6 @@
+name: Cy
+type: 2D
+x: фдзрф | deg
+y: Cy  |
+
+coords:
