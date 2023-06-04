@@ -1,9 +1,9 @@
 {
-    "active_var": 2,
+    "active_var": 0,
     "vehicles": [
         {
             "flight_parameters": {
-                "H": 55000,
+                "H": 60000,
                 "MV": [6],
                 "AV": []
             },
