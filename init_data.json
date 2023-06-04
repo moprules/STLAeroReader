@@ -1,6 +1,18 @@
 {
-    "active_var": 2,
+    "active_var": 1,
     "vehicles": [
+        {
+            "flight_parameters": {
+                "H": 55000,
+                "MV": [6],
+                "AV": [-90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+            },
+            "vehicle_data": {
+                "area": 3.463536,
+                "vehicle_name": "Karasik",
+                "dim": "mm"
+            }
+        },
         {
             "flight_parameters": {
                 "H": 55000,

@@ -20,14 +20,21 @@ const STL = {
 /**
  * @description Преобразовать байт-массив в данные о геометрии
  * @param {Array.<Uint8>} rawBinary массив байтов бинарного файла 
+ * @param {String} dim размерность модели
  * @returns {{header: String, nTriangles: Number, traingles: Object}} - заголовк прочтенного файла, количество элемнтарных треугольников и массив треугольников
  */
-function getSTLData(rawBinary) {
+function getSTLData(rawBinary, dim) {
 	const triangles = []
 	const header = rawBinary.toString('utf-8', 0, STL.HEADER_BYTES)
 	const nTriangles = rawBinary.readUInt32LE(STL.HEADER_BYTES)
 
 	let triangle_offset = STL.HEADER_BYTES + STL.N_TRI_BYTES
+
+	let kdim = 1
+
+	if (dim == "mm"){
+		kdim = 0.001
+	}
 
 	for(let i = 0; i < nTriangles; i++) {
 
@@ -41,9 +48,9 @@ function getSTLData(rawBinary) {
 		
 		for(let j = 0; j < 3; j++) {
 			norm[j] = facet_buffer.readFloatLE(STL.D_NORML + delta)
-			p1[j] = facet_buffer.readFloatLE(STL.D_POINT_1 + delta)
-			p2[j] = facet_buffer.readFloatLE(STL.D_POINT_2 + delta)
-			p3[j] = facet_buffer.readFloatLE(STL.D_POINT_3 + delta)
+			p1[j] = facet_buffer.readFloatLE(STL.D_POINT_1 + delta)*kdim
+			p2[j] = facet_buffer.readFloatLE(STL.D_POINT_2 + delta)*kdim
+			p3[j] = facet_buffer.readFloatLE(STL.D_POINT_3 + delta)*kdim
 			delta += 4
 		}
 
@@ -103,11 +110,14 @@ module.exports = {
 	/**
 	 * @description Считать бинарный STL-файл, созданный в Blender, и передать массив треугольников для дальнейшей обработки
 	 * @async
-	 * @param {String} path путь к обрабатываемому STL-файлу 
+	 * @param {Object} vehicle_data параметры stl файла 
 	 * @param {Function} geometryConsumer функция - преобразователь геометрии 
 	 * @returns {void} промис, успешно завершаемый передачей данных о геометрии объекта
 	 */
-	readSTL: function(path, geometryConsumer = null) {
+	readSTL: function(vehicle_data, geometryConsumer = null) {
+		// путь к обрабатываемому STL-файлу 
+		let path = `./data/${vehicle_data.vehicle_name}.stl`
+
 		return new Promise((resolve, reject) => {
 			fs.stat(path, false, (err, fileStats) => {
 				err ? reject(err) : resolve(fileStats)
@@ -124,7 +134,7 @@ module.exports = {
 				})
 			)
 			.then(binary => {
-					const stl_data = getSTLData(binary)
+					const stl_data = getSTLData(binary, vehicle_data.dim)
 					const {triangles, nTriangles} = stl_data
 					console.log(`model geometry data ready, ${nTriangles} facets total;\n`)
 					geometryConsumer(triangles) 

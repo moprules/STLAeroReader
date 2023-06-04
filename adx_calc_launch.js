@@ -110,4 +110,4 @@ const processADX = function(geometry) {
     prepareADXResult(adxTable, adxParameters, MV, AV, vehicle_data.vehicle_name, area, rad)
 }
 
-readSTL(`./data/${vehicle_data.vehicle_name}.stl`, processADX)
+readSTL(vehicle_data, processADX)
