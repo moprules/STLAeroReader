@@ -1,5 +1,5 @@
 {
-    "active_var": 0,
+    "active_var": 2,
     "vehicles": [
         {
             "flight_parameters": {
@@ -28,8 +28,7 @@
             "flight_parameters": {
                 "H": 95000,
                 "MV": [27.5],
-                "AV": [-1.745, -1.396, -1.047, -0.698, -0.349, 0, 0.349, 0.698, 1.047, 1.396, 1.745],
-                "rad": true
+                "AV": []
             },
             "vehicle_data": {
                 "area": 11.94,

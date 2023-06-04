@@ -16,7 +16,7 @@ const { vehicle_data, flight_parameters } = vehicles[active_var]
 if (flight_parameters.AV.length == 0) {
     let delta = 0.1
     flight_parameters.AV = []
-    for (let i = -90.0; i < 90; i += delta) {
+    for (let i = 0.0; i < 180; i += delta) {
         flight_parameters.AV.push(i)
     }
 }
