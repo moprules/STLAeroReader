@@ -1,6 +1,6 @@
 name: Cya
 type: 2D
-x: фдзрф | deg
+x: alpha | deg
 y: Cya  |
 
 coords:

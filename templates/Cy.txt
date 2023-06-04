@@ -1,6 +1,6 @@
 name: Cy
 type: 2D
-x: фдзрф | deg
+x: alpha | deg
 y: Cy  |
 
 coords:
