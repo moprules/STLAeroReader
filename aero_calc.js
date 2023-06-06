@@ -25,7 +25,7 @@ const activeAtmo = new AtmoModel()
 activeAtmo.initAtmo(atmosphereData)
 
 const saveResults = function (model, adxTab, adxPrms) {
-    const { MV, AV, rad } = flight_parameters
+    const { H, MV, AV, rad } = flight_parameters
     const { vehicle_name, area } = vehicle_data
 
 
@@ -95,10 +95,14 @@ const saveResults = function (model, adxTab, adxPrms) {
         `\theight: ${model.height} m`,
         `\twidth:  ${model.width} m`,
         `\tSmid:  ${area} m2`].join('\n') + "\n"
+    const HPoints = `H:   ${H} m`
     const machPoints = `Mach: ${MV.map(Mach => Mach).join('\t')}`
     const renoldsPoints = `Re:   ${adxPrms.map(({ reynolds }) => reynolds).join('\t')}`
     const knudsenPoints = `Kn:   ${adxPrms.map(({ knudsen }) => knudsen).join('\t')}`
+
+
     const log_res = [geometryStr,
+                     HPoints,
                      machPoints,
                      renoldsPoints,
                      knudsenPoints].join('\n') + "\n"
