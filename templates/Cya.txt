@@ -1,6 +1,0 @@
-name: Cya
-type: 2D
-x: alpha | deg
-y: Cya  |
-
-coords:

@@ -1,6 +1,0 @@
-name: Cy
-type: 2D
-x: alpha | deg
-y: Cy  |
-
-coords:

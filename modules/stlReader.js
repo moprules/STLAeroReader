@@ -116,18 +116,19 @@ module.exports = {
 	 */
 	readSTL: function(vehicle_data, geometryConsumer = null) {
 		// путь к обрабатываемому STL-файлу 
-		let path = `./data/${vehicle_data.vehicle_name}.stl`
+		let model_path = `./data/${vehicle_data.vehicle_name}.stl`
+		console.log(`\nModel : "${model_path}"\n`)
 
 		return new Promise((resolve, reject) => {
-			fs.stat(path, false, (err, fileStats) => {
+			fs.stat(model_path, false, (err, fileStats) => {
 				err ? reject(err) : resolve(fileStats)
 			})
 		})
 		.then( fileStats => {
-			getFileHandler(path, MODES.READ)
+			getFileHandler(model_path, MODES.READ)
 			.then(filePtr => new Promise((resolve, reject) => {
 					const readBuff = Buffer.alloc(fileStats.size)
-					console.log(`\nbinaries acquired, ${fileStats.size} bytes total;\n`)
+					console.log(`binaries acquired, ${fileStats.size} bytes total;`)
 					fs.read(filePtr, readBuff, 0, fileStats.size, 0, (err, content) => {
 						err ? reject(err) : resolve(readBuff)
 					})

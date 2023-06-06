@@ -1,7 +1,7 @@
 'use strict'
 
 const fs = require('fs')
-const { prepareRes } = require('./modules/dataFile.js')
+const path = require('path');
 
 const { readSTL } = require('./modules/stlReader.js')
 
@@ -24,46 +24,92 @@ if (flight_parameters.AV.length == 0) {
 const activeAtmo = new AtmoModel()
 activeAtmo.initAtmo(atmosphereData)
 
-const prepareADXResult = function (adxTab, adxPrms, MV, AV, vehicle_name, area, rad) {
-    let res = prepareRes(vehicle_name)
+const saveResults = function (model, adxTab, adxPrms) {
+    const { MV, AV, rad } = flight_parameters
+    const { vehicle_name, area } = vehicle_data
+
+
+    // Папка с результами расчёта
+    let d = new Date();
+    let year = d.getFullYear()
+    let month = d.getMonth()
+    let day = d.getDay()
+    let hour = d.getHours()
+    let minut = d.getMinutes()
+    const resFolder = `./grafics/${vehicle_name}_${year}-${month}-${day}_${hour}.${minut}/`
+    fs.mkdirSync(resFolder, { recursive: true }, (err) => {
+        if (err) throw err;
+    });
 
     const nA = AV.length
 
+    let isFirst = true
     for (let j = 0; j < nA; j++) {
         let alpha = rad ? AV[j] : (AV[j] * Math.PI / 180)
         let CTA = Math.cos(alpha)
         let STA = Math.sin(alpha)
-        let {Cx, Cy, Cz, CxF } = adxTab[0][j]
-        Cx = -Cx;
-        let Cxa = Cx * CTA + Cy * STA + CxF
-        let Cya = Cy * CTA - Cx * STA
+        let res = adxTab[0][j]
+        res.Cx = -res.Cx;
+
+        let Cxa = res.Cx * CTA + res.Cy * STA + res.CxF
+        let Cya = res.Cy * CTA - res.Cx * STA
         let K = Cya / Cxa
+
 
         let alpha_deg = rad ? (AV[j] * 180 / Math.PI) : AV[j]
 
-        let Cx_str = `${alpha_deg} -> ${Cx}\n`
-        let Cxa_str = `${alpha_deg} -> ${Cxa}\n`
-        let Cy_str = `${alpha_deg} -> ${Cy}\n`
-        let Cya_str = `${alpha_deg} -> ${Cya}\n`
-        let K_str = `${alpha_deg} -> ${K}\n`
+        let res_str = {}
+        res_str["X_force"] = `${alpha_deg} -> ${res.X_force}\n`
+        res_str["Y_force"] = `${alpha_deg} -> ${res.Y_force}\n`
 
-        fs.writeFileSync(res["Cx"], Cx_str, { flag: 'a' })
-        fs.writeFileSync(res["Cxa"], Cxa_str, { flag: 'a' })
-        fs.writeFileSync(res["Cy"], Cy_str, { flag: 'a' })
-        fs.writeFileSync(res["Cya"], Cya_str, { flag: 'a' })
-        fs.writeFileSync(res["K"], K_str, { flag: 'a' })
+        res_str["Cx"] = `${alpha_deg} -> ${res.Cx}\n`
+        res_str["Cy"] = `${alpha_deg} -> ${res.Cy}\n`
+
+        res_str["Cxa"] = `${alpha_deg} -> ${Cxa}\n`
+        res_str["Cya"] = `${alpha_deg} -> ${Cya}\n`
+        res_str["K"] = `${alpha_deg} -> ${K}\n`
+
+        // Если это первый проход
+        if (isFirst) {
+            // Опускаем флаг
+            isFirst = false
+            // Задаём заголовки файлов расчёта
+            for (const [param, value] of Object.entries(res_str)) {
+                let header_str = `name: ${param}\ntype: 2D\nx: alpha | deg\ny: ${param}  | \n\ncoords:\n`
+                let file_param = path.join(resFolder, param) + ".txt"
+                fs.writeFileSync(file_param, header_str, { flag: 'a' })
+            }
+        }
+
+        for (const [param, value] of Object.entries(res_str)) {
+            let file_param = path.join(resFolder, param) + ".txt"
+            fs.writeFileSync(file_param, value, { flag: 'a' })
+        }
 
     }
 
+    const resultHeader = `Model : "./data/${vehicle_data.vehicle_name}.stl"\n`
+    const geometryStr = [
+        'geometry:',
+        `\tlength: ${model.size} m`,
+        `\theight: ${model.height} m`,
+        `\twidth:  ${model.width} m`,
+        `\tSmid:  ${area} m2`].join('\n') + "\n"
+    const machPoints = `Mach: ${MV.map(Mach => Mach).join('\t')}`
+    const renoldsPoints = `Re:   ${adxPrms.map(({ reynolds }) => reynolds).join('\t')}`
+    const knudsenPoints = `Kn:   ${adxPrms.map(({ knudsen }) => knudsen).join('\t')}`
+    const log_res = [geometryStr,
+                     machPoints,
+                     renoldsPoints,
+                     knudsenPoints].join('\n') + "\n"
 
-    const resultHeader = `Aerodynamic characteristics for ${vehicle_name}\nCalculated for specific area: ${area} m2\n\n\n\n`
+    console.log(log_res)
 
+    const res_txt = resultHeader + "\n\n" + log_res
+    let res_file = path.join(resFolder, "res.txt")
+    fs.writeFileSync(res_file, res_txt, { flag: 'a' })
 
-    const machPoints = `Mach = \n ${MV.map(Mach => Mach.toFixed(2)).join('\t')}\n\n`
-
-    const adxPrmPoints = `${adxPrms.map(({ reynolds, knudsen }) => 'Re: ' + reynolds + '; Kn: ' + knudsen).join('\t')}\n\n`
-
-    console.log(resultHeader + machPoints + adxPrmPoints)
+    console.log('aerodinamic data ready to output;\n')
 
 }
 
@@ -71,19 +117,16 @@ const processADX = function (geometry) {
     const { H, MV, AV, rad } = flight_parameters
     const { area } = vehicle_data
 
+    // Параметры воздушного потока на высоте H
     activeAtmo.setupIndex(H)
     const test_flow = activeAtmo.getAtmo(H)
 
+    // Модель обтекания воздухом
     const model = new AeroModel()
 
     model.init(geometry, area)
-    console.log([
-        'geometry ready',
-        `length: ${model.size}`,
-        `height: ${model.height}`,
-        `width: ${model.width}`
-    ].join('\n'))
-
+    console.log('geometry ready\n')
+    // Расчёт аэродинамических параметров
     const { adxTable, adxParameters } = model.calcTable(
         MV,
         rad ? AV : AV.map(alpha => alpha * Math.PI / 180),
@@ -91,9 +134,7 @@ const processADX = function (geometry) {
         test_flow
     )
 
-    console.log('aerodinamic data ready to output;\n')
-
-    prepareADXResult(adxTable, adxParameters, MV, AV, vehicle_data.vehicle_name, area, rad)
+    saveResults(model, adxTable, adxParameters)
 }
 
 readSTL(vehicle_data, processADX)

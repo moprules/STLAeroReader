@@ -1,6 +1,0 @@
-name: Cx
-type: 2D
-x: alpha | deg
-y: K  |
-
-coords:
