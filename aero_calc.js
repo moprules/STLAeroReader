@@ -30,13 +30,14 @@ const prepareADXResult = function (adxTab, adxPrms, MV, AV, vehicle_name, area, 
     const nA = AV.length
 
     for (let j = 0; j < nA; j++) {
-        const alpha = rad ? AV[j] : (AV[j] * Math.PI / 180)
-        const CTA = Math.cos(alpha)
-        const STA = Math.sin(alpha)
+        let alpha = rad ? AV[j] : (AV[j] * Math.PI / 180)
+        let CTA = Math.cos(alpha)
+        let STA = Math.sin(alpha)
         let {Cx, Cy, Cz, CxF } = adxTab[0][j]
         Cx = -Cx;
-        const Cxa = Cx * CTA + Cy * STA + CxF
-        const Cya = Cy * CTA - Cx * STA
+        let Cxa = Cx * CTA + Cy * STA + CxF
+        let Cya = Cy * CTA - Cx * STA
+        let K = Cya / Cxa
 
         let alpha_deg = rad ? (AV[j] * 180 / Math.PI) : AV[j]
 
@@ -44,11 +45,13 @@ const prepareADXResult = function (adxTab, adxPrms, MV, AV, vehicle_name, area, 
         let Cxa_str = `${alpha_deg} -> ${Cxa}\n`
         let Cy_str = `${alpha_deg} -> ${Cy}\n`
         let Cya_str = `${alpha_deg} -> ${Cya}\n`
+        let K_str = `${alpha_deg} -> ${K}\n`
 
         fs.writeFileSync(res["Cx"], Cx_str, { flag: 'a' })
         fs.writeFileSync(res["Cxa"], Cxa_str, { flag: 'a' })
         fs.writeFileSync(res["Cy"], Cy_str, { flag: 'a' })
         fs.writeFileSync(res["Cya"], Cya_str, { flag: 'a' })
+        fs.writeFileSync(res["K"], K_str, { flag: 'a' })
 
     }
 

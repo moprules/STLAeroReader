@@ -39,7 +39,8 @@ module.exports = {
             "Cx": path.join(res_folder, "Cx.txt"),
             "Cxa": path.join(res_folder, "Cxa.txt"),
             "Cy": path.join(res_folder, "Cy.txt"),
-            "Cya": path.join(res_folder, "Cya.txt")
+            "Cya": path.join(res_folder, "Cya.txt"),
+            "K": path.join(res_folder, "K.txt")
         }
         return res;
     }
