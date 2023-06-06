@@ -90,7 +90,6 @@ const processADX = function (geometry) {
         0,
         test_flow
     )
-    console.log(rad ? AV : AV.map(alpha => alpha * Math.PI / 180))
 
     console.log('aerodinamic data ready to output;\n')
 
