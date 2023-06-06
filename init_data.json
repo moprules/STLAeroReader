@@ -8,9 +8,9 @@
                 "AV": []
             },
             "vehicle_data": {
-                "area": 3.463536,
+                "area": 3463536,
                 "vehicle_name": "Karasik",
-                "dim": "mm"
+                "dim": "m"
             }
         },
         {
