@@ -49,7 +49,7 @@ const saveResults = function (model, adxTab, adxPrms) {
         let CTA = Math.cos(alpha)
         let STA = Math.sin(alpha)
         let res = adxTab[0][j]
-        res.Cx = -res.Cx;
+        // res.Cx = -res.Cx;
 
         let Cxa = res.Cx * CTA + res.Cy * STA + res.CxF
         let Cya = res.Cy * CTA - res.Cx * STA
@@ -61,6 +61,7 @@ const saveResults = function (model, adxTab, adxPrms) {
         let res_str = {}
         res_str["X_force"] = `${alpha_deg} -> ${res.X_force}\n`
         res_str["Y_force"] = `${alpha_deg} -> ${res.Y_force}\n`
+        res_str["Z_force"] = `${alpha_deg} -> ${res.Z_force}\n`
 
         res_str["Cx"] = `${alpha_deg} -> ${res.Cx}\n`
         res_str["Cy"] = `${alpha_deg} -> ${res.Cy}\n`
@@ -68,6 +69,10 @@ const saveResults = function (model, adxTab, adxPrms) {
         res_str["Cxa"] = `${alpha_deg} -> ${Cxa}\n`
         res_str["Cya"] = `${alpha_deg} -> ${Cya}\n`
         res_str["K"] = `${alpha_deg} -> ${K}\n`
+
+        // res_str["mX"] = `${alpha_deg} -> ${res.mX}\n`
+        // res_str["mY"] = `${alpha_deg} -> ${res.mY}\n`
+        res_str["mZ"] = `${alpha_deg} -> ${res.mZ}\n`
 
         // Если это первый проход
         if (isFirst) {

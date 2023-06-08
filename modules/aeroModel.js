@@ -74,7 +74,7 @@ class AeroModel {
         const adxSumm = [0, 0, 0]
         const torqueSumm = [0, 0, 0]
         const PI_05 = Math.PI * 0.5
-        
+
         for(let i = 0; i < this.nFacets; i++) {
             const {norm, p1, p2, p3} = this.facets[i]
             const localNu0 = Vector.angleBetween(Velocity, norm)
@@ -111,15 +111,15 @@ class AeroModel {
         }
 
         return {
-            X_force: adxSumm[0], // сопротивление
+            X_force: -adxSumm[0], // сопротивление
             Y_force: adxSumm[1], // подъемная сила
             Z_force: adxSumm[2], // боковая сила
-            Cx: adxSumm[0] / QS, // коэф.сопротивления
+            Cx: -adxSumm[0] / QS, // коэф.сопротивления
             Cy: adxSumm[1] / QS, // коэф.подъемной силы
             Cz: adxSumm[2] / QS, // коэф. боковой силы
-            mX: torqueSumm[0] / (QS * this.size),
-            mY: torqueSumm[1] / (QS * this.size),
-            mZ: torqueSumm[2] / (QS * this.size)
+            mX: torqueSumm[0], 
+            mY: torqueSumm[1],
+            mZ: torqueSumm[2]
         }        
     }
     /**
