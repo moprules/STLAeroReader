@@ -45,50 +45,24 @@ const saveResults = function (model, adxTab, adxPrms) {
 
     let isFirst = true
     for (let j = 0; j < nA; j++) {
-        let alpha = rad ? AV[j] : (AV[j] * Math.PI / 180)
-        let CTA = Math.cos(alpha)
-        let STA = Math.sin(alpha)
-        let res = adxTab[0][j]
-        // res.Cx = -res.Cx;
-
-        let Cxa = res.Cx * CTA + res.Cy * STA + res.CxF
-        let Cya = res.Cy * CTA - res.Cx * STA
-        let K = Cya / Cxa
-
-
-        let alpha_deg = rad ? (AV[j] * 180 / Math.PI) : AV[j]
-
-        let res_str = {}
-        res_str["X_force"] = `${alpha_deg} -> ${res.X_force}\n`
-        res_str["Y_force"] = `${alpha_deg} -> ${res.Y_force}\n`
-        res_str["Z_force"] = `${alpha_deg} -> ${res.Z_force}\n`
-
-        res_str["Cx"] = `${alpha_deg} -> ${res.Cx}\n`
-        res_str["Cy"] = `${alpha_deg} -> ${res.Cy}\n`
-
-        res_str["Cxa"] = `${alpha_deg} -> ${Cxa}\n`
-        res_str["Cya"] = `${alpha_deg} -> ${Cya}\n`
-        res_str["K"] = `${alpha_deg} -> ${K}\n`
-
-        // res_str["mX"] = `${alpha_deg} -> ${res.mX}\n`
-        // res_str["mY"] = `${alpha_deg} -> ${res.mY}\n`
-        res_str["mZ"] = `${alpha_deg} -> ${res.mZ}\n`
+        const alpha = rad ? (AV[j] * 180 / Math.PI) : AV[j]
+        const res = adxTab[0][j]
 
         // Если это первый проход
         if (isFirst) {
             // Опускаем флаг
             isFirst = false
             // Задаём заголовки файлов расчёта
-            for (const [param, value] of Object.entries(res_str)) {
+            for (const [param, value] of Object.entries(res)) {
                 let header_str = `name: ${param}\ntype: 2D\nx: alpha | deg\ny: ${param}  | \n\ncoords:\n`
                 let file_param = path.join(resFolder, param) + ".txt"
                 fs.writeFileSync(file_param, header_str, { flag: 'a' })
             }
         }
 
-        for (const [param, value] of Object.entries(res_str)) {
+        for (const [param, value] of Object.entries(res)) {
             let file_param = path.join(resFolder, param) + ".txt"
-            fs.writeFileSync(file_param, value, { flag: 'a' })
+            fs.writeFileSync(file_param, `${alpha} -> ${value}\n`, { flag: 'a' })
         }
 
     }
@@ -99,7 +73,10 @@ const saveResults = function (model, adxTab, adxPrms) {
         `\tlength: ${model.size} m`,
         `\theight: ${model.height} m`,
         `\twidth:  ${model.width} m`,
-        `\tSmid:  ${area} m2`].join('\n') + "\n"
+        `\tSmid:  ${area} m2`,
+        `\tS:  ${model.sWetted} m2`,
+        `\tXcs:   ${model.Xcs} m`,
+        `\tYcs:   ${model.Ycs} m`].join('\n') + "\n"
     const HPoints = `H:   ${H} m`
     const machPoints = `Mach: ${MV.map(Mach => Mach).join('\t')}`
     const renoldsPoints = `Re:   ${adxPrms.map(({ reynolds }) => reynolds).join('\t')}`

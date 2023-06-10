@@ -9,6 +9,9 @@ class AeroModel {
         this.size = 0       // Длина
         this.width = 0
         this.height = 0
+        // Центр поверхности аппарата
+        this.Xcs = 0
+        this.Ycs = 0
     }
     /**
      * @description получить исходные данные, на их основе определить смачиваемую поверхность конуса
@@ -28,8 +31,42 @@ class AeroModel {
         let zMin = 0
         let zMax = 0
 
-        for(let i = 0; i < this.nFacets; i++) {
-            const {p1, p2, p3} = this.facets[i]
+        let pp1 = [0, 0, 0]
+        let pp2 = [0, 0, 0]
+        let pp3 = [0, 0, 0]
+
+        let centerSurface = [0, 0, 0]
+        let surfaceProex = [0, 0, 0]
+        let proexArea = 0
+        for (let i = 0; i < this.nFacets; i++) {
+            let { p1, p2, p3 } = this.facets[i]
+
+            let localCenter = Vector.triCenter(p1, p2, p3)
+            for (let k = 0; k < 3; k++) {
+                pp1 = [...p1]
+                pp2 = [...p2]
+                pp3 = [...p3]
+                pp1[k] = 0
+                pp2[k] = 0
+                pp3[k] = 0
+
+                let isCan = true
+                for (let n = 0; n < 3; n++) {
+                    if (n != k) {
+                        if (pp1[n] == pp2[n] ||
+                            pp1[n] == pp3[n] ||
+                            pp2[n] == pp3[n]) {
+                            isCan = false
+                            break
+                        }
+                    }
+                }
+                if (isCan) {
+                    proexArea = Vector.heronArea(pp1, pp2, pp3)
+                    centerSurface[k] += proexArea * localCenter[k]
+                    surfaceProex[k] += proexArea
+                }
+            }
             this.sWetted += Vector.heronArea(p1, p2, p3)
 
             xMin = Math.min(xMin, p1[0], p2[0], p3[0])
@@ -43,7 +80,19 @@ class AeroModel {
         this.size = xMax - xMin
         this.height = yMax - yMin
         this.width = zMax - zMin
+
+        for (let k = 0; k < 3; k++) {
+            if (surfaceProex[k] == 0) {
+                centerSurface[k] = 0
+            } else {
+                centerSurface[k] /= surfaceProex[k]
+            }
+        }
+
+        this.Xcs = this.size - centerSurface[0]
+        this.Ycs = centerSurface[2]
     }
+
     /**
      * @description получить параметры обтекания элементарной объекта при одном значении числа M, угла атаки и скольжения
      * @param {Number} Qpress скоростной напор
@@ -55,11 +104,11 @@ class AeroModel {
      * @param {Number} betha угол скольжения
      * @return {Object} параметры обтекания
      */
-    calcSinglePoint(Qpress, ThMax, NuMax, Mach, flow, alpha, betha, Kn = 0) {
-        const {P, k, aSn, vChaotic} = flow        
+    calcSinglePoint(Qpress, ThMax, NuMax, Mach, flow, alpha, betha, Kn = 0, CxF) {
+        const { P, k, aSn, vChaotic } = flow
 
         const QS = Qpress * this.area
-        
+
         const CTA = Math.cos(alpha)
         const STA = Math.sin(alpha)
         const CTB = Math.cos(betha)
@@ -75,8 +124,8 @@ class AeroModel {
         const torqueSumm = [0, 0, 0]
         const PI_05 = Math.PI * 0.5
 
-        for(let i = 0; i < this.nFacets; i++) {
-            const {norm, p1, p2, p3} = this.facets[i]
+        for (let i = 0; i < this.nFacets; i++) {
+            const { norm, p1, p2, p3 } = this.facets[i]
             const localNu0 = Vector.angleBetween(Velocity, norm)
             const localNu = Math.abs(localNu0) > PI_05 ?
                 -Math.abs(localNu0) + PI_05 :
@@ -86,21 +135,21 @@ class AeroModel {
             const localCenter = Vector.triCenter(p1, p2, p3)
 
             let deltaP = 1
-            if(Kn < 1E-2) {
+            if (Kn < 1E-2) {
                 deltaP = GasDynamics.getDeltaPressure(ThMax, NuMax, localNu, Mach, k)
-            } else if(Kn >= 1E-2 && Kn < 10) {
+            } else if (Kn >= 1E-2 && Kn < 10) {
                 const k_rare = (2.3026 - Math.log(Kn)) / 6.908
                 deltaP = k_rare * GasDynamics.getDeltaPressure(ThMax, NuMax, localNu, Mach, k) + (1 - k_rare) * GasDynamics.getSlipFlow(localNu, Mach, k, aSn, vChaotic)
-            } else if (Kn >= 10){
+            } else if (Kn >= 10) {
                 deltaP = GasDynamics.getSlipFlow(localNu, Mach, k, aSn, vChaotic)
             }
 
             const localForce = deltaP * P * localArea
-            
+
             const dX = -localForce * norm[0]
             const dY = -localForce * norm[1]
             const dZ = -localForce * norm[2]
-            
+
             adxSumm[0] += dX
             adxSumm[1] += dY
             adxSumm[2] += dZ
@@ -110,17 +159,20 @@ class AeroModel {
             torqueSumm[2] += (dX * localCenter[1] + dY * localCenter[0])
         }
 
-        return {
-            X_force: -adxSumm[0], // сопротивление
-            Y_force: adxSumm[1], // подъемная сила
-            Z_force: adxSumm[2], // боковая сила
-            Cx: -adxSumm[0] / QS, // коэф.сопротивления
-            Cy: adxSumm[1] / QS, // коэф.подъемной силы
-            Cz: adxSumm[2] / QS, // коэф. боковой силы
-            mX: torqueSumm[0], 
-            mY: torqueSumm[1],
-            mZ: torqueSumm[2]
-        }        
+        let Fx = -adxSumm[0] // сопротивление
+        let Fy = adxSumm[1] // подъемная сила
+        let Fz = adxSumm[2] // боковая сила
+        let Cx = -adxSumm[0] / QS // коэф.сопротивления
+        let Cy = adxSumm[1] / QS // коэф.подъемной силы
+        let Cz = adxSumm[2] / QS // коэф. боковой силы
+        let Cxa = Cx * CTA + Cy * STA + CxF
+        let Cya = Cy * CTA - Cx * STA
+        let K = Cya / Cxa
+        let Mx = torqueSumm[0]
+        let My = torqueSumm[1]
+        let Mz = torqueSumm[2]
+
+        return { Fx, Fy, Fz, Cx, Cy, Cz, Cxa, Cya, K, Mx, My, Mz }
     }
     /**
      * @description получить таблицу АДХ для заданного диапазона чисел M и углов атаки
@@ -133,26 +185,38 @@ class AeroModel {
     calcTable(MV, AV, betha, flow) {
         const nMach = MV.length
         const nAlpha = AV.length
-        const {P, k, aSn} = flow
+        const { P, k, aSn } = flow
         const result = new Array(nMach)
         const adxParameters = []
-        
-        for(let i = 0; i < nMach; i++) {
+
+        for (let i = 0; i < nMach; i++) {
             result[i] = []
             const Mach = MV[i]
             const reynolds = Mach * aSn * this.size / flow.viscosity
             const knudsen = Mach * Math.sqrt(0.5 * k * Math.PI) / reynolds
             const CxF = 0.074 * Math.pow(reynolds, -0.2) * this.sWetted / this.area
             const Qpress = 0.5 * k * P * Mach * Mach
-            const {NuMax, ThMax} = GasDynamics.getThMax(Mach, k)
-            
-            adxParameters.push({reynolds, knudsen})
+            const { NuMax, ThMax } = GasDynamics.getThMax(Mach, k)
 
-            for(let j = 0; j < nAlpha; j++) {
+            adxParameters.push({ reynolds, knudsen })
+            // Шаг для определеняи центра давления 5 градусов
+            const delta = 10 * Math.PI / 180
+            for (let j = 0; j < nAlpha; j++) {
                 const alpha = AV[j]
+
+                let curPoint = this.calcSinglePoint(Qpress, ThMax, NuMax, Mach, flow, alpha, betha, knudsen, CxF)
+                let deltaPoint = this.calcSinglePoint(Qpress, ThMax, NuMax, Mach, flow, alpha + delta, betha, knudsen, CxF)
+                // Определяем центр давления
+                const M = [[curPoint.Fy, curPoint.Fx], [deltaPoint.Fy, deltaPoint.Fx]]
+                const b = [curPoint.Mz, deltaPoint.Mz]
+
+                let Cd = Vector.solve(M, b)
+
                 const adxMachAlpha = {
-                    ...this.calcSinglePoint(Qpress, ThMax, NuMax, Mach, flow, alpha, betha, knudsen),
-                    CxF
+                    ...curPoint,
+                    CxF,
+                    Xcd: this.size - Cd[0],
+                    Ycd: Cd[1]
                 }
                 result[i].push(adxMachAlpha)
             }
