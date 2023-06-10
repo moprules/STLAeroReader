@@ -222,7 +222,14 @@ class AeroModel {
             }
         }
 
-        return { adxTable: result, adxParameters }
+        let balance = { K: result[0][0].K }
+        for (let j = 1; j < nAlpha; j++) {
+            if (balance.K < result[0][j].K) {
+                balance = { alpha: AV[j] * 180 / Math.PI, ...result[0][j] }
+            }
+        }
+
+        return { adxTable: result, adxParameters, balance }
     }
 }
 

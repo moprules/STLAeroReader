@@ -24,7 +24,7 @@ if (flight_parameters.AV.length == 0) {
 const activeAtmo = new AtmoModel()
 activeAtmo.initAtmo(atmosphereData)
 
-const saveResults = function (model, adxTab, adxPrms) {
+const saveResults = function (model, adxTab, adxPrms, balance) {
     const { H, MV, AV, rad } = flight_parameters
     const { vehicle_name, area } = vehicle_data
 
@@ -77,6 +77,12 @@ const saveResults = function (model, adxTab, adxPrms) {
         `\tS:  ${model.sWetted} m2`,
         `\tXcs:   ${model.Xcs} m`,
         `\tYcs:   ${model.Ycs} m`].join('\n') + "\n"
+    
+
+    let balanceParams = "Balance Params:\n"
+    for (const [param, value] of Object.entries(balance)) {
+        balanceParams += `\t${param}:    ${value}\n`
+    }
     const HPoints = `H:   ${H} m`
     const machPoints = `Mach: ${MV.map(Mach => Mach).join('\t')}`
     const renoldsPoints = `Re:   ${adxPrms.map(({ reynolds }) => reynolds).join('\t')}`
@@ -84,10 +90,11 @@ const saveResults = function (model, adxTab, adxPrms) {
 
 
     const log_res = [geometryStr,
-                     HPoints,
-                     machPoints,
-                     renoldsPoints,
-                     knudsenPoints].join('\n') + "\n"
+        balanceParams,
+        HPoints,
+        machPoints,
+        renoldsPoints,
+        knudsenPoints].join('\n') + "\n"
 
     console.log(log_res)
 
@@ -113,14 +120,14 @@ const processADX = function (geometry) {
     model.init(geometry, area)
     console.log('geometry ready\n')
     // Расчёт аэродинамических параметров
-    const { adxTable, adxParameters } = model.calcTable(
+    const { adxTable, adxParameters, balance } = model.calcTable(
         MV,
         rad ? AV : AV.map(alpha => alpha * Math.PI / 180),
         0,
         test_flow
     )
 
-    saveResults(model, adxTable, adxParameters)
+    saveResults(model, adxTable, adxParameters, balance)
 }
 
 readSTL(vehicle_data, processADX)
